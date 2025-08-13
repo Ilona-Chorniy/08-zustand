@@ -4,9 +4,11 @@ import type { FetchNotesResponse } from "@/lib/api";
 import { NoteTag } from "@/types/note";
 import type { Metadata } from 'next';
 
-export async function generateMetadata(
-  { params }: { params: { slug?: NoteTag[] | ['All'] } }
-): Promise<Metadata> {
+interface NotesPageProps {
+  params: { slug?: NoteTag[] | ['All'] };
+}
+
+export async function generateMetadata({ params }: NotesPageProps): Promise<Metadata> {
   const tag = params.slug?.[0] === 'All' ? 'All notes' : params.slug?.[0] ?? 'Unknown filter';
 
   return {
@@ -28,9 +30,8 @@ export async function generateMetadata(
   };
 }
 
-export default async function NotesPage({ params }: { params: Promise<{ slug?: NoteTag[] | ['All'] }> }) {
-  const resolvedParams = await params;
-  let tag = resolvedParams.slug?.[0];
+export default async function NotesPage({ params }: NotesPageProps) {
+  let tag = params.slug?.[0];
 
   if (tag === "All") {
     tag = undefined;
