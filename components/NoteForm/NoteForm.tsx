@@ -1,110 +1,104 @@
-import { Formik, Form, Field, ErrorMessage } from "formik";
-import * as Yup from "yup";
+"use client";
+
 import css from "./NoteForm.module.css";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createNote, type CreateNoteData } from "@/lib/api";
-import type { NoteTag } from "../../types/note";
+import { useNoteStore } from "@/lib/store/noteStore";
+import { useRouter } from "next/navigation";
+import { NoteTag } from "@/types/note";
 
-interface NoteFormProps {
-  isLoading?: boolean; 
-  onCancel: () => void;
-}
-
-const validationSchema = Yup.object().shape({
-  title: Yup.string()
-    .min(3, "Minimum 3 characters")
-    .max(50, "Maximum 50 characters")
-    .required("Title is required"),
-  content: Yup.string().max(500, "Maximum 500 characters"),
-  tag: Yup.mixed<NoteTag>()
-    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"], "Invalid tag")
-    .required("Tag is required"),
-});
-
-const initialValues: CreateNoteData = {
-  title: "",
-  content: "",
-  tag: "Todo",
-};
-
-const NoteForm: React.FC<NoteFormProps> = ({ onCancel }) => {
+export default function NoteForm() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+
+  const { draft, setDraft, clearDraft } = useNoteStore();
+
   const mutation = useMutation({
     mutationFn: createNote,
     onSuccess: () => {
+      clearDraft();       
+      router.back();      
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
   });
 
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    const updated: CreateNoteData = { ...draft, [name]: value as NoteTag };
+    setDraft(updated);
+  };
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    mutation.mutate(draft);
+  };
+
+  const handleCancel = () => router.back();
+
   return (
-    <Formik
-      initialValues={initialValues}
-      validationSchema={validationSchema}
-      onSubmit={(values, { resetForm }) => {
-        mutation.mutate(values, {
-          onSuccess: () => {
-            resetForm();
-            onCancel(); 
-          },
-        });
-      }}
-    >
-      <Form className={css.form}>
-        <div className={css.formGroup}>
-          <label htmlFor="title">Title</label>
-          <Field
-            id="title"
-            name="title"
-            type="text"
-            className={css.input}
-          />
-          <ErrorMessage name="title" component="div" className={css.error} />
-        </div>
+    <form className={css.form} onSubmit={handleSubmit}>
+      <div className={css.formGroup}>
+        <label htmlFor="title">Title</label>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          className={css.input}
+          value={draft.title}
+          onChange={handleChange}
+          required
+          minLength={3}
+          maxLength={50}
+        />
+      </div>
 
-        <div className={css.formGroup}>
-          <label htmlFor="content">Content</label>
-          <Field
-            as="textarea"
-            id="content"
-            name="content"
-            rows={8}
-            className={css.textarea}
-          />
-          <ErrorMessage name="content" component="div" className={css.error} />
-        </div>
+      <div className={css.formGroup}>
+        <label htmlFor="content">Content</label>
+        <textarea
+          id="content"
+          name="content"
+          rows={8}
+          className={css.textarea}
+          value={draft.content}
+          onChange={handleChange}
+          maxLength={500}
+        />
+      </div>
 
-        <div className={css.formGroup}>
-          <label htmlFor="tag">Tag</label>
-          <Field as="select" name="tag" className={css.select}>
-            <option value="Todo">Todo</option>
-            <option value="Work">Work</option>
-            <option value="Personal">Personal</option>
-            <option value="Meeting">Meeting</option>
-            <option value="Shopping">Shopping</option>
-          </Field>
-          <ErrorMessage name="tag" component="div" className={css.error} />
-        </div>
+      <div className={css.formGroup}>
+        <label htmlFor="tag">Tag</label>
+        <select
+          id="tag"
+          name="tag"
+          className={css.select}
+          value={draft.tag}
+          onChange={handleChange}
+          required
+        >
+          <option value="Todo">Todo</option>
+          <option value="Work">Work</option>
+          <option value="Personal">Personal</option>
+          <option value="Meeting">Meeting</option>
+          <option value="Shopping">Shopping</option>
+        </select>
+      </div>
 
-        <div className={css.actions}>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={mutation.status === "pending"}
-            className={css.cancelButton}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={mutation.status === "pending"}
-            className={css.submitButton}
-          >
-            {mutation.status === "pending" ? "Creating..." : "Create note"}
-          </button>
-        </div>
-      </Form>
-    </Formik>
+      <div className={css.actions}>
+        <button type="button" onClick={handleCancel} className={css.cancelButton}>
+          Cancel
+        </button>
+        <button
+        type="submit"
+        disabled={mutation.status === "pending"}
+        className={css.submitButton}
+>
+      {mutation.status === "pending" ? "Creating..." : "Create note"}
+      </button>
+
+      </div>
+    </form>
   );
-};
-
-export default NoteForm;
+}

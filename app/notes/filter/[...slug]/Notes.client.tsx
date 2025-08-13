@@ -4,8 +4,6 @@ import { useState, useEffect } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import NoteList from "@/components/NoteList/NoteList";
-import NoteModal from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
 import Pagination from "@/components/Pagination/Pagination";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import { fetchNotes } from "@/lib/api";
@@ -13,6 +11,7 @@ import css from './NotesPage.module.css'
 import type { FetchNotesResponse } from "@/lib/api";
 import { Toaster, toast } from "react-hot-toast";
 import { NoteTag } from "@/types/note";
+import Link from "next/link";
 
 const PER_PAGE = 12;
 
@@ -26,7 +25,6 @@ const NotesClient: React.FC<NotesClientProps> = ({ initialData, tag }) => {
   const [pageCount, setPageCount] = useState(initialData.totalPages);
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 500);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   
   const { data, isLoading, isError, error } = useQuery<FetchNotesResponse | null, Error>({
     queryKey: ["notes", page, PER_PAGE, debouncedSearch, tag],
@@ -74,13 +72,9 @@ const NotesClient: React.FC<NotesClientProps> = ({ initialData, tag }) => {
           <Pagination page={page} setPage={setPage} pageCount={pageCount} />
         )}
 
-        <button
-          type="button"
-          className={css.button}
-          onClick={() => setIsModalOpen(true)}
-        >
+        <Link href="/notes/action/create" className={css.button}>
           Create note +
-        </button>
+        </Link>
       </header>
 
       {isLoading && <p>Loading notes...</p>}
@@ -94,14 +88,6 @@ const NotesClient: React.FC<NotesClientProps> = ({ initialData, tag }) => {
         <NoteList
           notes={data.notes}
         />
-      )}
-
-      {isModalOpen && (
-        <NoteModal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onCancel={() => setIsModalOpen(false)}
-          />
-        </NoteModal>
       )}
 
 
