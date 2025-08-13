@@ -5,11 +5,12 @@ import { NoteTag } from "@/types/note";
 import type { Metadata } from 'next';
 
 interface NotesPageProps {
-  params: { slug?: NoteTag[] | ['All'] };
+  params: Promise<{ slug?: NoteTag[] | ['All'] }>;
 }
 
 export async function generateMetadata({ params }: NotesPageProps): Promise<Metadata> {
-  const tag = params.slug?.[0] === 'All' ? 'All notes' : params.slug?.[0] ?? 'Unknown filter';
+  const resolvedParams = await params;
+  const tag = resolvedParams.slug?.[0] === 'All' ? 'All notes' : resolvedParams.slug?.[0] ?? 'Unknown filter';
 
   return {
     title: `NoteHub – Notes with filter: ${tag}`,
@@ -17,7 +18,7 @@ export async function generateMetadata({ params }: NotesPageProps): Promise<Meta
     openGraph: {
       title: `NoteHub – Notes with filter: ${tag}`,
       description: `Review notes filtered by tag: ${tag}`,
-      url: `https://08-zustand-smoky.vercel.app/notes/filter/${params.slug?.join('/') ?? ''}`,
+      url: `https://08-zustand-smoky.vercel.app/notes/filter/${resolvedParams.slug?.join('/') ?? ''}`,
       images: [
         {
           url: 'https://ac.goit.global/fullstack/react/notehub-og-meta.jpg',
@@ -31,7 +32,8 @@ export async function generateMetadata({ params }: NotesPageProps): Promise<Meta
 }
 
 export default async function NotesPage({ params }: NotesPageProps) {
-  let tag = params.slug?.[0];
+  const resolvedParams = await params;
+  let tag = resolvedParams.slug?.[0];
 
   if (tag === "All") {
     tag = undefined;
